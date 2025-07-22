@@ -218,8 +218,9 @@ const Index = () => {
               <CardContent className="p-4">
                 <p className="text-sm text-center text-muted-foreground">
                   <strong>Demo credentials:</strong><br />
-                  Email: demo@ibacmi.edu<br />
-                  Password: demo123
+                  Student: student@yahoo.com<br />
+                  Admin: admin@yahoo.com<br />
+                  Password: (create account or use your own)
                 </p>
               </CardContent>
             </Card>
