@@ -13,10 +13,12 @@ import {
   History,
   Clock,
   MapPin,
-  Edit3
+  Edit3,
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import QRCodeGenerator from 'qrcode';
 
 interface Profile {
   id: string;
@@ -41,6 +43,7 @@ export default function StudentProfile() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [qrCodeImage, setQrCodeImage] = useState<string>('');
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -122,12 +125,29 @@ export default function StudentProfile() {
   };
 
   const generateQRCode = async () => {
-    if (!profile) return;
+    if (!profile || !profile.student_id) {
+      toast({
+        title: "Cannot Generate QR Code",
+        description: "Please add a Student ID first",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {
-      // Generate QR code data (in real app, you'd use a QR library)
+      // Generate QR code data with student ID
       const qrData = `IBACMI_LAB_${profile.student_id}_${profile.id}`;
+      
+      // Generate actual QR code image
+      const qrCodeDataURL = await QRCodeGenerator.toDataURL(qrData, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#1e40af', // lab-blue color
+          light: '#ffffff'
+        }
+      });
       
       const { error } = await supabase
         .from('profiles')
@@ -136,14 +156,16 @@ export default function StudentProfile() {
 
       if (error) throw error;
 
+      setQrCodeImage(qrCodeDataURL);
       await fetchProfile();
       
       toast({
         title: "QR Code Generated",
-        description: "Your lab access QR code has been created",
+        description: "Your lab access QR code has been created successfully",
       });
 
     } catch (error) {
+      console.error('QR Generation error:', error);
       toast({
         title: "Generation Failed",
         description: "Failed to generate QR code. Please try again.",
@@ -154,9 +176,36 @@ export default function StudentProfile() {
     }
   };
 
+  const downloadQRCode = () => {
+    if (!qrCodeImage || !profile) return;
+    
+    const link = document.createElement('a');
+    link.download = `IBACMI_Lab_QR_${profile.student_id}.png`;
+    link.href = qrCodeImage;
+    link.click();
+  };
+
+  const regenerateQRCode = async () => {
+    await generateQRCode();
+  };
+
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  // Generate QR code image when profile has qr_code data
+  useEffect(() => {
+    if (profile?.qr_code) {
+      QRCodeGenerator.toDataURL(profile.qr_code, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#1e40af',
+          light: '#ffffff'
+        }
+      }).then(setQrCodeImage).catch(console.error);
+    }
+  }, [profile?.qr_code]);
 
   if (!profile) {
     return (
@@ -289,36 +338,62 @@ export default function StudentProfile() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {profile.qr_code ? (
+          {profile.qr_code && qrCodeImage ? (
             <div className="text-center space-y-4">
-              <div className="inline-block p-6 bg-white border-2 border-lab-blue/20 rounded-lg">
-                <div className="w-32 h-32 bg-gradient-subtle border-2 border-dashed border-lab-blue/30 rounded flex items-center justify-center">
-                  <QrCode className="h-16 w-16 text-lab-blue/50" />
-                </div>
+              <div className="inline-block p-6 bg-white border-2 border-lab-blue/20 rounded-lg shadow-card">
+                <img 
+                  src={qrCodeImage} 
+                  alt="Lab Access QR Code" 
+                  className="w-48 h-48 mx-auto"
+                />
               </div>
-              <p className="text-sm text-muted-foreground font-mono">
-                {profile.qr_code}
-              </p>
-              <Button 
-                variant="outline"
-                className="border-accent text-accent hover:bg-accent hover:text-accent-foreground"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download QR Code
-              </Button>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground font-mono break-all">
+                  {profile.qr_code}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Student ID: {profile.student_id}
+                </p>
+              </div>
+              <div className="flex gap-2 justify-center">
+                <Button 
+                  onClick={downloadQRCode}
+                  variant="outline"
+                  className="border-accent text-accent hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download QR Code
+                </Button>
+                <Button 
+                  onClick={regenerateQRCode}
+                  disabled={isLoading}
+                  variant="outline"
+                  className="border-lab-blue text-lab-blue hover:bg-lab-blue hover:text-white"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Regenerate
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="text-center py-8">
               <QrCode className="h-16 w-16 mx-auto mb-4 text-lab-blue/50" />
-              <p className="text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-2">
                 No QR code generated yet
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                {!profile.student_id ? 'Please add your Student ID first' : 'Generate your unique lab access QR code'}
               </p>
               <Button 
                 onClick={generateQRCode}
-                disabled={isLoading}
+                disabled={isLoading || !profile.student_id}
                 className="bg-gradient-primary hover:shadow-glow"
               >
-                <QrCode className="h-4 w-4 mr-2" />
+                {isLoading ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <QrCode className="h-4 w-4 mr-2" />
+                )}
                 Generate QR Code
               </Button>
             </div>
