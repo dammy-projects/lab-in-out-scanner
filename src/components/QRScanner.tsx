@@ -42,23 +42,31 @@ export default function QRScanner({ onScanComplete }: QRScannerProps) {
 
     setIsScanning(true);
     try {
+      // Check if QrScanner is supported
+      const hasCamera = await QrScanner.hasCamera();
+      if (!hasCamera) {
+        throw new Error('No camera found');
+      }
+
       // Initialize QR Scanner
       qrScannerRef.current = new QrScanner(
         videoRef.current,
         (result) => handleQRScan(result.data),
         {
-          onDecodeError: () => {}, // Ignore decode errors
+          onDecodeError: () => {}, // Ignore decode errors silently
           highlightScanRegion: true,
           highlightCodeOutline: true,
+          preferredCamera: 'environment', // Use back camera on mobile
         }
       );
 
       await qrScannerRef.current.start();
+      console.log('QR Scanner started successfully');
     } catch (error) {
       console.error('Camera error:', error);
       toast({
         title: "Camera Error",
-        description: "Unable to access camera. Please check permissions.",
+        description: "Unable to access camera. Please check permissions and try again.",
         variant: "destructive"
       });
       setIsScanning(false);
