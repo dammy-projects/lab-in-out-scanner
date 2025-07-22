@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, ScanLine, User, Clock, CheckCircle, XCircle, Shield, Mail, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import QrScanner from 'qr-scanner';
 
 interface QRScannerProps {
   onScanComplete?: (data: any) => void;
@@ -17,21 +18,44 @@ export default function QRScanner({ onScanComplete }: QRScannerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [lastScanTime, setLastScanTime] = useState<number>(0);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const qrScannerRef = useRef<QrScanner | null>(null);
   const { toast } = useToast();
 
   // Minimum time between scans (in milliseconds) to prevent rapid scanning
   const SCAN_COOLDOWN = 3000; // 3 seconds
 
-  // Simulate QR scanning for demo - replace with actual QR library
+  // Handle QR code scan result
+  const handleQRScan = (result: string) => {
+    // Extract student ID from QR code (assuming format: IBACMI_LAB_STUDENTID_UUID)
+    const qrParts = result.split('_');
+    if (qrParts.length >= 3) {
+      const studentId = qrParts[2];
+      simulateScan(studentId);
+    } else {
+      // Try direct student ID
+      simulateScan(result);
+    }
+  };
+
   const startScanning = async () => {
+    if (!videoRef.current) return;
+
     setIsScanning(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      // Initialize QR Scanner
+      qrScannerRef.current = new QrScanner(
+        videoRef.current,
+        (result) => handleQRScan(result.data),
+        {
+          onDecodeError: () => {}, // Ignore decode errors
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+        }
+      );
+
+      await qrScannerRef.current.start();
     } catch (error) {
+      console.error('Camera error:', error);
       toast({
         title: "Camera Error",
         description: "Unable to access camera. Please check permissions.",
@@ -43,9 +67,10 @@ export default function QRScanner({ onScanComplete }: QRScannerProps) {
 
   const stopScanning = () => {
     setIsScanning(false);
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+    if (qrScannerRef.current) {
+      qrScannerRef.current.stop();
+      qrScannerRef.current.destroy();
+      qrScannerRef.current = null;
     }
   };
 
