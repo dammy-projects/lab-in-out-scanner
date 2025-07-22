@@ -38,28 +38,42 @@ export default function QRScanner({ onScanComplete }: QRScannerProps) {
   };
 
   const startScanning = async () => {
-    if (!videoRef.current) return;
+    console.log('startScanning called, videoRef.current:', videoRef.current);
+    if (!videoRef.current) {
+      console.log('No video ref, returning');
+      return;
+    }
 
     setIsScanning(true);
+    console.log('Set isScanning to true');
+    
     try {
+      console.log('Checking if camera is available...');
       // Check if QrScanner is supported
       const hasCamera = await QrScanner.hasCamera();
+      console.log('Has camera:', hasCamera);
+      
       if (!hasCamera) {
         throw new Error('No camera found');
       }
 
+      console.log('Creating QrScanner instance...');
       // Initialize QR Scanner
       qrScannerRef.current = new QrScanner(
         videoRef.current,
-        (result) => handleQRScan(result.data),
+        (result) => {
+          console.log('QR detected:', result.data);
+          handleQRScan(result.data);
+        },
         {
-          onDecodeError: () => {}, // Ignore decode errors silently
+          onDecodeError: (error) => console.log('Decode error (normal):', error), // Ignore decode errors silently
           highlightScanRegion: true,
           highlightCodeOutline: true,
           preferredCamera: 'environment', // Use back camera on mobile
         }
       );
 
+      console.log('Starting QR scanner...');
       await qrScannerRef.current.start();
       console.log('QR Scanner started successfully');
     } catch (error) {
