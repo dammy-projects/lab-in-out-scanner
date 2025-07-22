@@ -116,7 +116,7 @@ export default function QRScanner({ onScanComplete }: QRScannerProps) {
         .limit(1);
 
       // Auto-detect if student is checking in or out
-      const action = (!lastLog || lastLog.length === 0 || lastLog[0]?.action === 'OUT') ? 'IN' : 'OUT';
+      const action = (!lastLog || lastLog.length === 0 || lastLog[0]?.action === 'check-out') ? 'check-in' : 'check-out';
 
       // Record the scan
       const { data: logData, error: logError } = await supabase
@@ -142,8 +142,8 @@ export default function QRScanner({ onScanComplete }: QRScannerProps) {
       onScanComplete?.(scanResult);
 
       toast({
-        title: `${action === 'IN' ? 'Entry' : 'Exit'} Recorded`,
-        description: `${profile.first_name} ${profile.last_name} - ${action === 'IN' ? 'Entered' : 'Left'} lab`,
+        title: `${action === 'check-in' ? 'Entry' : 'Exit'} Recorded`,
+        description: `${profile.first_name} ${profile.last_name} - ${action === 'check-in' ? 'Entered' : 'Left'} lab`,
         variant: "default"
       });
 
@@ -241,12 +241,12 @@ export default function QRScanner({ onScanComplete }: QRScannerProps) {
         <Card className="shadow-card animate-fade-in-up border-l-4 border-l-accent">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              {lastScan.action === 'IN' ? (
+              {lastScan.action === 'check-in' ? (
                 <CheckCircle className="h-5 w-5 text-accent" />
               ) : (
                 <XCircle className="h-5 w-5 text-destructive" />
               )}
-              {lastScan.action === 'IN' ? 'Student Entered' : 'Student Exited'}
+              {lastScan.action === 'check-in' ? 'Student Entered' : 'Student Exited'}
             </CardTitle>
             <CardDescription>
               Scan recorded at {new Date(lastScan.timestamp).toLocaleString()}
@@ -294,10 +294,10 @@ export default function QRScanner({ onScanComplete }: QRScannerProps) {
               
               <div className="text-right">
                 <Badge 
-                  variant={lastScan.action === 'IN' ? 'default' : 'destructive'}
-                  className={`text-sm px-3 py-1 ${lastScan.action === 'IN' ? 'bg-accent hover:bg-accent/80' : ''}`}
+                  variant={lastScan.action === 'check-in' ? 'default' : 'destructive'}
+                  className={`text-sm px-3 py-1 ${lastScan.action === 'check-in' ? 'bg-accent hover:bg-accent/80' : ''}`}
                 >
-                  {lastScan.action === 'IN' ? 'ENTERED LAB' : 'EXITED LAB'}
+                  {lastScan.action === 'check-in' ? 'ENTERED LAB' : 'EXITED LAB'}
                 </Badge>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
                   <Clock className="h-3 w-3" />
@@ -310,7 +310,7 @@ export default function QRScanner({ onScanComplete }: QRScannerProps) {
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <div className="text-lg font-semibold text-accent">
-                  {lastScan.action === 'IN' ? 'IN' : 'OUT'}
+                  {lastScan.action === 'check-in' ? 'IN' : 'OUT'}
                 </div>
                 <div className="text-xs text-muted-foreground">Current Status</div>
               </div>
