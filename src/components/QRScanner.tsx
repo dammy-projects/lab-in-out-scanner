@@ -196,24 +196,15 @@ export default function QRScanner({ onScanComplete }: QRScannerProps) {
             </Button>
 
             {/* Demo buttons for testing */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => simulateScan('STU001')}
+                onClick={() => simulateScan('42141243243')}
                 disabled={isLoading}
                 className="border-accent text-accent hover:bg-accent hover:text-accent-foreground"
               >
-                Demo: Student 1
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => simulateScan('STU002')}
-                disabled={isLoading}
-                className="border-accent text-accent hover:bg-accent hover:text-accent-foreground"
-              >
-                Demo: Student 2
+                Demo: Scan Jomars
               </Button>
             </div>
           </div>
