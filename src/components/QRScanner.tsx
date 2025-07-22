@@ -221,7 +221,14 @@ export default function QRScanner({ onScanComplete }: QRScannerProps) {
           {/* Controls */}
           <div className="space-y-2">
             <Button 
-              onClick={isScanning ? stopScanning : startScanning}
+              onClick={() => {
+                console.log('Button clicked, isScanning:', isScanning, 'isLoading:', isLoading);
+                if (isScanning) {
+                  stopScanning();
+                } else {
+                  startScanning();
+                }
+              }}
               className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300"
               disabled={isLoading}
             >
